@@ -11,8 +11,8 @@ struct PPPOEPolicy {
 struct LCPPolicy {
     bool insertMagicNumber { true };
     uint16_t MRU { 1492U };
-    bool authCHAP { false };
-    bool authPAP { true };
+    bool authCHAP { true };
+    bool authPAP { false };
 };
 
 #endif
