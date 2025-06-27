@@ -190,8 +190,32 @@ std::tuple<bool,uint32_t> VPPAPI::create_tap( const std::string &host_name ) {
         vapi::Tap_create_v2 tap{ con };
 
         auto &req = tap.get_request().get_payload();
-        strncpy( (char*)req.host_if_name, host_name.c_str(), host_name.length() );
-        req.host_if_name_set = true;
+        
+        // 初始化所有字段为默认值
+        memset(&req, 0, sizeof(req));
+        
+        // 设置接口ID为自动分配
+        req.id = ~0;
+        
+        // 使用随机MAC地址 - 这是关键！
+        req.use_random_mac = true;
+        
+        // 设置主机侧接口名称
+        if (!host_name.empty()) {
+            strncpy( (char*)req.host_if_name, host_name.c_str(), 
+                     std::min(host_name.length(), sizeof(req.host_if_name) - 1) );
+            req.host_if_name_set = true;
+        }
+        
+        // 设置默认队列数量
+        req.num_rx_queues = 1;
+        
+        // 设置默认环大小
+        req.tx_ring_sz = 256;
+        req.rx_ring_sz = 256;
+        
+        // 设置TAP标志（如果需要的话）
+        req.tap_flags = static_cast<vapi_enum_tap_flags>(0);  // 可以根据需要设置GSO等标志
 
         auto ret = tap.execute();
         if( ret != VAPI_OK ) {
@@ -206,6 +230,7 @@ std::tuple<bool,uint32_t> VPPAPI::create_tap( const std::string &host_name ) {
         auto repl = tap.get_response().get_payload();
         logger->logDebug() << LOGS::VPP << "Added tap: " << repl.sw_if_index << std::endl;
         if( repl.retval < 0 ) {
+            logger->logError() << LOGS::VPP << "Tap_create_v2 failed with retval: " << repl.retval << std::endl;
             return { false, 0 };
         }
 
