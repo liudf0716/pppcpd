@@ -2,11 +2,7 @@
 #define AUTH_CLIENT_HPP
 
 #include <map>
-#include <boost/asio/io_service.hpp>
-#include <boost/asio/steady_timer.hpp>
-#include <boost/asio/ip/address.hpp>
-#include <boost/asio/ip/network_v4.hpp>
-#include <boost/asio/ip/udp.hpp>
+#include <boost/asio.hpp>
 
 using io_service = boost::asio::io_service;
 using address_v4_t = boost::asio::ip::address_v4;

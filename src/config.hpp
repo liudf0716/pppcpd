@@ -2,6 +2,7 @@
 #define CONFIG_HPP
 
 #include <set>
+#include <optional>
 
 #include "aaa.hpp"
 #include "policy.hpp"

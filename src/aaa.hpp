@@ -1,6 +1,7 @@
 #ifndef AAA_HPP_
 #define AAA_HPP_
 
+#include <optional>
 #include "auth_client.hpp"
 #include "session.hpp"
 
