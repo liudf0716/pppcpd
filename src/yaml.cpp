@@ -107,9 +107,15 @@ bool YAML::convert<AAAConf>::decode( const YAML::Node &node, AAAConf &rhs ) {
     if( node[ "local_template" ].IsDefined() ) {
         rhs.local_template = node[ "local_template" ].as<std::string>();
     }
-    rhs.dictionaries = node[ "dictionaries" ].as<std::vector<std::string>>();
-    rhs.auth_servers = node[ "auth_servers" ].as<std::map<std::string,AAARadConf>>();
-    rhs.acct_servers = node[ "acct_servers" ].as<std::map<std::string,AAARadConf>>();
+    if( node[ "dictionaries" ].IsDefined() ) {
+        rhs.dictionaries = node[ "dictionaries" ].as<std::vector<std::string>>();
+    }
+    if( node[ "auth_servers" ].IsDefined() ) {
+        rhs.auth_servers = node[ "auth_servers" ].as<std::map<std::string,AAARadConf>>();
+    }
+    if( node[ "acct_servers" ].IsDefined() ) {
+        rhs.acct_servers = node[ "acct_servers" ].as<std::map<std::string,AAARadConf>>();
+    }
     return true;
 }
 

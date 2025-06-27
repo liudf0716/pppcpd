@@ -186,75 +186,100 @@ bool VPPAPI::set_interface_table( int32_t ifi, const std::string &vrf ) {
 }
 
 std::tuple<bool,uint32_t> VPPAPI::create_tap( const std::string &host_name ) {
-    vapi::Tap_create_v2 tap{ con };
+    try {
+        vapi::Tap_create_v2 tap{ con };
 
-    auto &req = tap.get_request().get_payload();
-    strncpy( (char*)req.host_if_name, host_name.c_str(), host_name.length() );
-    req.host_if_name_set = true;
+        auto &req = tap.get_request().get_payload();
+        strncpy( (char*)req.host_if_name, host_name.c_str(), host_name.length() );
+        req.host_if_name_set = true;
 
-    auto ret = tap.execute();
-    if( ret != VAPI_OK ) {
-        logger->logError() << LOGS::VPP << "Error on executing Tap_create_v2 api method" << std::endl;
-    }
+        auto ret = tap.execute();
+        if( ret != VAPI_OK ) {
+            logger->logError() << LOGS::VPP << "Error on executing Tap_create_v2 api method" << std::endl;
+            return { false, 0 };
+        }
 
-    do {
-        ret = con.wait_for_response( tap );
-    } while( ret == VAPI_EAGAIN );
+        do {
+            ret = con.wait_for_response( tap );
+        } while( ret == VAPI_EAGAIN );
 
-    auto repl = tap.get_response().get_payload();
-    logger->logDebug() << LOGS::VPP << "Added tap: " << repl.sw_if_index << std::endl;
-    if( repl.retval < 0 ) {
+        auto repl = tap.get_response().get_payload();
+        logger->logDebug() << LOGS::VPP << "Added tap: " << repl.sw_if_index << std::endl;
+        if( repl.retval < 0 ) {
+            return { false, 0 };
+        }
+
+        return { true, uint32_t{ repl.sw_if_index } };
+    } catch( const vapi::Msg_not_available_exception& e ) {
+        logger->logError() << LOGS::VPP << "Tap_create_v2 message not available: " << e.what() << std::endl;
         return { false, 0 };
     }
-
-    return { true, uint32_t{ repl.sw_if_index } };
 }
 
 bool VPPAPI::delete_tap( uint32_t id ) {
-    vapi::Tap_delete_v2 tap{ con };
-
-    auto &req = tap.get_request().get_payload();
-    req.sw_if_index = id;
-
-    auto ret = tap.execute();
-    if( ret != VAPI_OK ) {
-        logger->logError() << LOGS::VPP << "Error on executing Tap_delete_v2 api method" << std::endl;
-    }
-
-    do {
-        ret = con.wait_for_response( tap );
-    } while( ret == VAPI_EAGAIN );
-
-    auto repl = tap.get_response().get_payload();
-    logger->logDebug() << LOGS::VPP << "Deleted tap: " << id << std::endl;
-    if( repl.retval < 0 ) {
+    // Check if the message ID is available before using it
+    if( vapi_msg_id_tap_delete_v2 == 0 ) {
+        logger->logError() << LOGS::VPP << "Tap_delete_v2 message ID not initialized" << std::endl;
         return false;
     }
 
-    return true;
+    try {
+        vapi::Tap_delete_v2 tap{ con };
+
+        auto &req = tap.get_request().get_payload();
+        req.sw_if_index = id;
+
+        auto ret = tap.execute();
+        if( ret != VAPI_OK ) {
+            logger->logError() << LOGS::VPP << "Error on executing Tap_delete_v2 api method" << std::endl;
+            return false;
+        }
+
+        do {
+            ret = con.wait_for_response( tap );
+        } while( ret == VAPI_EAGAIN );
+
+        auto repl = tap.get_response().get_payload();
+        logger->logDebug() << LOGS::VPP << "Deleted tap: " << id << std::endl;
+        if( repl.retval < 0 ) {
+            return false;
+        }
+
+        return true;
+    } catch( const vapi::Msg_not_available_exception& e ) {
+        logger->logError() << LOGS::VPP << "Tap_delete_v2 message not available: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 std::set<uint32_t> VPPAPI::get_tap_interfaces() {
     std::set<uint32_t> output;
-    vapi::Sw_interface_tap_v2_dump dump{ con };
+    
+    try {
+        vapi::Sw_interface_tap_v2_dump dump{ con };
 
-    auto &req = dump.get_request().get_payload();
-    req.sw_if_index = ~0;
+        auto &req = dump.get_request().get_payload();
+        req.sw_if_index = ~0;
 
-    auto ret = dump.execute();
-    if( ret != VAPI_OK ) {
-        logger->logError() << LOGS::VPP << "Error on executing Sw_interface_tap_v2_dump api method" << std::endl;
+        auto ret = dump.execute();
+        if( ret != VAPI_OK ) {
+            logger->logError() << LOGS::VPP << "Error on executing Sw_interface_tap_v2_dump api method" << std::endl;
+            return output;
+        }
+
+        do {
+            ret = con.wait_for_response( dump );
+        } while( ret == VAPI_EAGAIN );
+
+        for( auto &el: dump.get_result_set() ) {
+            output.emplace( uint32_t{ el.get_payload().sw_if_index } );
+        }
+
+        return output;
+    } catch( const vapi::Msg_not_available_exception& e ) {
+        logger->logError() << LOGS::VPP << "Sw_interface_tap_v2_dump message not available: " << e.what() << std::endl;
+        return output;
     }
-
-    do {
-        ret = con.wait_for_response( dump );
-    } while( ret == VAPI_EAGAIN );
-
-    for( auto &el: dump.get_result_set() ) {
-        output.emplace( uint32_t{ el.get_payload().sw_if_index } );
-    }
-
-    return output;
 }
 
 std::vector<VPPInterface> VPPAPI::get_ifaces() {
