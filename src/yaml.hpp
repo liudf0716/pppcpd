@@ -4,6 +4,7 @@
 #include <yaml-cpp/yaml.h>
 
 struct PPPOEPolicy;
+struct LCPPolicy;
 struct FRAMED_POOL;
 enum class AAA_METHODS: uint8_t;
 struct PPPOELocalTemplate;
@@ -22,6 +23,13 @@ namespace YAML {
     {
         static Node encode(const PPPOEPolicy &rhs);
         static bool decode(const Node &node, PPPOEPolicy &rhs);
+    };
+
+    template <>
+    struct convert<LCPPolicy>
+    {
+        static Node encode(const LCPPolicy &rhs);
+        static bool decode(const Node &node, LCPPolicy &rhs);
     };
 
     template <>

@@ -45,8 +45,12 @@ std::string ppp::processPPP( std::vector<uint8_t> &inPkt, const encapsulation_t 
             if( action == PPP_FSM_ACTION::LAYER_UP ) {
                 if( runtime->lcp_conf->authCHAP ) {
                     session.chap.open();
-                } else {
+                } else if( runtime->lcp_conf->authPAP ) {
                     session.auth.open();
+                } else {
+                    // No authentication
+                    session.ipcp.open();
+                    session.ipcp.layer_up();
                 }
             } else if( action == PPP_FSM_ACTION::LAYER_DOWN ) {
                 runtime->logger->logError() << LOGS::PPP << "LCP goes down, terminate session..." << std::endl;

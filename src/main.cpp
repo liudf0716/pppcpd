@@ -62,6 +62,12 @@ static void conf_init() {
         std::forward_as_tuple( "main_acct_1" ),
         std::forward_as_tuple( "127.0.0.1", 1813, "testing123" ) );
 
+    // LCP configuration
+    global_conf.lcp_conf.insertMagicNumber = true;
+    global_conf.lcp_conf.MRU = 1492;
+    global_conf.lcp_conf.authCHAP = true;   // Use CHAP authentication by default
+    global_conf.lcp_conf.authPAP = false;  // Set to true to use PAP instead
+
     {
         InterfaceConf iconf;
         iconf.device = "G0";
@@ -163,9 +169,8 @@ int main( int argc, char *argv[] ) {
     io_service io;
     runtime = std::make_shared<PPPOERuntime>( path_config, io );
 
-    // LCP options
-    runtime->lcp_conf = std::make_shared<LCPPolicy>();
-    runtime->lcp_conf->authCHAP = true;
+    // LCP options from configuration file
+    runtime->lcp_conf = std::make_shared<LCPPolicy>( runtime->conf.lcp_conf );
 
     EVLoop loop( io );
     std::remove( "/var/run/pppcpd.sock" );

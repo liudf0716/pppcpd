@@ -104,6 +104,7 @@ struct PPPOEGlobalConf {
     std::map<uint16_t,PPPOEPolicy> pppoe_confs;
     std::map<std::string,PPPOELocalTemplate> pppoe_templates;
     AAAConf aaa_conf;
+    LCPPolicy lcp_conf;
     StaticRIB global_rib;
     std::vector<VRFConf> vrfs;
 };

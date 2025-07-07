@@ -21,6 +21,31 @@ bool YAML::convert<PPPOEPolicy>::decode( const YAML::Node &node, PPPOEPolicy &rh
     return true;
 }
 
+YAML::Node YAML::convert<LCPPolicy>::encode( const LCPPolicy &rhs ) {
+    Node node;
+    node["insert_magic_number"] = rhs.insertMagicNumber;
+    node["mru"] = rhs.MRU;
+    node["auth_chap"] = rhs.authCHAP;
+    node["auth_pap"] = rhs.authPAP;
+    return node;
+}
+
+bool YAML::convert<LCPPolicy>::decode( const YAML::Node &node, LCPPolicy &rhs ) {
+    if( node["insert_magic_number"] ) {
+        rhs.insertMagicNumber = node["insert_magic_number"].as<bool>();
+    }
+    if( node["mru"] ) {
+        rhs.MRU = node["mru"].as<uint16_t>();
+    }
+    if( node["auth_chap"] ) {
+        rhs.authCHAP = node["auth_chap"].as<bool>();
+    }
+    if( node["auth_pap"] ) {
+        rhs.authPAP = node["auth_pap"].as<bool>();
+    }
+    return true;
+}
+
 YAML::Node YAML::convert<FRAMED_POOL>::encode( const FRAMED_POOL &rhs ) {
     Node node;
     node["start_ip"] = rhs.start_ip.to_string();
@@ -175,6 +200,7 @@ YAML::Node YAML::convert<PPPOEGlobalConf>::encode( const PPPOEGlobalConf &rhs ) 
     node[ "pppoe_confs" ] = rhs.pppoe_confs;
     node[ "pppoe_templates" ] = rhs.pppoe_templates;
     node[ "aaa_conf" ] = rhs.aaa_conf;
+    node[ "lcp_conf" ] = rhs.lcp_conf;
     node[ "global_rib" ] = rhs.global_rib;
     node[ "vrfs" ] = rhs.vrfs;
     return node;
@@ -187,6 +213,9 @@ bool YAML::convert<PPPOEGlobalConf>::decode( const YAML::Node &node, PPPOEGlobal
     rhs.pppoe_confs = node[ "pppoe_confs" ].as<std::map<uint16_t,PPPOEPolicy>>();
     rhs.pppoe_templates = node[ "pppoe_templates" ].as<std::map<std::string,PPPOELocalTemplate>>();
     rhs.aaa_conf = node[ "aaa_conf" ].as<AAAConf>();
+    if( node[ "lcp_conf" ] ) {
+        rhs.lcp_conf = node[ "lcp_conf" ].as<LCPPolicy>();
+    }
     rhs.global_rib = node[ "global_rib" ].as<StaticRIB>();
     rhs.vrfs = node[ "vrfs" ].as<std::vector<VRFConf>>();
     return true;
