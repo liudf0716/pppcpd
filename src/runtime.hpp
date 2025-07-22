@@ -80,6 +80,7 @@ public:
     std::tuple<uint16_t,std::string> allocateSession( const encapsulation_t &encap );
     std::string deallocateSession( uint16_t sid );
     void reloadConfig();
+    void cleanup();
 
 private:
     std::set<uint16_t> sessionSet;

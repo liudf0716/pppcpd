@@ -180,5 +180,11 @@ int main( int argc, char *argv[] ) {
         io.run();
     }
 
+    // 显式清理，确保正确的析构顺序
+    if( runtime ) {
+        runtime->cleanup();
+        runtime.reset();
+    }
+
     return 0;
 }

@@ -76,10 +76,12 @@ AAA_Session::AAA_Session( io_service &i, uint32_t sid, const std::string &u, con
 }
 
 AAA_Session::~AAA_Session() {
-    if( free_ip ) {
+    if( free_ip && runtime ) {
         auto const &fr_pool = runtime->conf.aaa_conf.pools.find( framed_pool );
         if( fr_pool == runtime->conf.aaa_conf.pools.end() ) {
-            runtime->logger->logDebug() << LOGS::AAA << "Can't deallocate IP: " << address.to_string() << ", can't find the pool" << std::endl;
+            if( runtime->logger ) {
+                runtime->logger->logDebug() << LOGS::AAA << "Can't deallocate IP: " << address.to_string() << ", can't find the pool" << std::endl;
+            }
             return;
         }
         fr_pool->second.deallocate_ip( address.to_uint() );

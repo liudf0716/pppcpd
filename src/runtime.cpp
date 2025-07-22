@@ -177,3 +177,19 @@ void PPPOERuntime::clearPendingSession( std::shared_ptr<boost::asio::steady_time
         pendingSession.erase( it );
     }
 }
+
+void PPPOERuntime::cleanup() {
+    logger->logInfo() << LOGS::MAIN << "Starting cleanup process..." << std::endl;
+    
+    // 首先停止所有AAA会话
+    if( aaa ) {
+        aaa->stopAllSessions();
+    }
+    
+    // 清理活动会话
+    activeSessions.clear();
+    sessionSet.clear();
+    pendingSession.clear();
+    
+    logger->logInfo() << LOGS::MAIN << "Cleanup completed" << std::endl;
+}

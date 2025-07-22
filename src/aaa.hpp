@@ -40,6 +40,7 @@ public:
     void startSessionCHAP( const std::string &user, const std::string &challenge, const std::string &response, PPPOESession &sess, aaa_callback callback );
     void stopSession( uint32_t sid );
     void mapIfaceToSession( uint32_t session_id, uint32_t ifindex );
+    void stopAllSessions();
 
     std::optional<RadiusDict> dict;
 };

@@ -254,3 +254,11 @@ void AAA::mapIfaceToSession( uint32_t session_id, uint32_t ifindex ) {
         it->second->map_iface( ifindex );
     }
 }
+
+void AAA::stopAllSessions() {
+    runtime->logger->logInfo() << LOGS::AAA << "Stopping all AAA sessions..." << std::endl;
+    for( auto &[sid, session] : sessions ) {
+        session->stop();
+    }
+    sessions.clear();
+}
