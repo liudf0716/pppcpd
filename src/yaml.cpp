@@ -195,6 +195,7 @@ bool YAML::convert<InterfaceConf>::decode( const YAML::Node &node, InterfaceConf
 YAML::Node YAML::convert<PPPOEGlobalConf>::encode( const PPPOEGlobalConf &rhs ) {
     Node node;
     node[ "tap_name" ] = rhs.tap_name;
+    node[ "log_level" ] = rhs.log_level;
     node[ "interfaces" ] = rhs.interfaces;
     node[ "default_pppoe_conf" ] = rhs.default_pppoe_conf;
     node[ "pppoe_confs" ] = rhs.pppoe_confs;
@@ -208,6 +209,11 @@ YAML::Node YAML::convert<PPPOEGlobalConf>::encode( const PPPOEGlobalConf &rhs ) 
 
 bool YAML::convert<PPPOEGlobalConf>::decode( const YAML::Node &node, PPPOEGlobalConf &rhs ) {
     rhs.tap_name = node[ "tap_name" ].as<std::string>();
+    if( node[ "log_level" ].IsDefined() ) {
+        rhs.log_level = node[ "log_level" ].as<LOG_LEVEL>();
+    } else {
+        rhs.log_level = LOG_LEVEL::INFO; // default log level
+    }
     rhs.interfaces = node[ "interfaces" ].as<std::vector<InterfaceConf>>();
     rhs.default_pppoe_conf = node[ "default_pppoe_conf" ].as<PPPOEPolicy>();
     rhs.pppoe_confs = node[ "pppoe_confs" ].as<std::map<uint16_t,PPPOEPolicy>>();
@@ -278,5 +284,40 @@ bool YAML::convert<VRFConf>::decode( const YAML::Node &node, VRFConf &rhs ) {
     rhs.name = node[ "name" ].as<std::string>();
     rhs.table_id = node[ "table_id" ].as<uint32_t>();
     rhs.rib = node[ "rib" ].as<StaticRIB>();
+    return true;
+}
+
+YAML::Node YAML::convert<LOG_LEVEL>::encode( const LOG_LEVEL &rhs ) {
+    Node node;
+    switch( rhs ) {
+    case LOG_LEVEL::DEBUG:
+        node = "DEBUG"; break;
+    case LOG_LEVEL::INFO:
+        node = "INFO"; break;
+    case LOG_LEVEL::WARNING:
+        node = "WARNING"; break;
+    case LOG_LEVEL::ERROR:
+        node = "ERROR"; break;
+    case LOG_LEVEL::CRITICAL:
+        node = "CRITICAL"; break;
+    }
+    return node;
+}
+
+bool YAML::convert<LOG_LEVEL>::decode( const YAML::Node &node, LOG_LEVEL &rhs ) {
+    auto t = node.as<std::string>();
+    if( t == "DEBUG" ) {
+        rhs = LOG_LEVEL::DEBUG;
+    } else if( t == "INFO" ) {
+        rhs = LOG_LEVEL::INFO;
+    } else if( t == "WARNING" ) {
+        rhs = LOG_LEVEL::WARNING;
+    } else if( t == "ERROR" ) {
+        rhs = LOG_LEVEL::ERROR;
+    } else if( t == "CRITICAL" ) {
+        rhs = LOG_LEVEL::CRITICAL;
+    } else {
+        return false;
+    }
     return true;
 }

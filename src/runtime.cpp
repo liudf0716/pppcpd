@@ -22,7 +22,7 @@ PPPOERuntime::PPPOERuntime( std::string cp, io_service &i ) :
     reloadConfig();
     aaa = std::make_shared<AAA>( io, conf.aaa_conf );
 
-    logger->setLevel( LOGL::DEBUG );
+    logger->setLevel( LOGL::INFO );
     logger->logInfo() << LOGS::MAIN << "Starting PPP control plane daemon..." << std::endl;
     vpp = std::make_shared<VPPAPI>( io, logger );
     for( auto const &tapid: vpp->get_tap_interfaces() ) {
