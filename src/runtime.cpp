@@ -133,22 +133,46 @@ bool PPPOERuntime::checkSession( mac_t mac, uint16_t outer_vlan, uint16_t inner_
 }
 
 std::tuple<uint16_t,std::string> PPPOERuntime::allocateSession( const encapsulation_t &encap ) {
-    for( uint16_t i = 1; i < UINT16_MAX; i++ ) {
-        if( auto ret = sessionSet.find( i ); ret == sessionSet.end() ) {
-            if( auto const &[ it, ret ] = sessionSet.emplace( i ); !ret ) {
+    // Start searching from next_session_id for better performance
+    uint16_t start_id = next_session_id;
+    uint16_t current_id = start_id;
+    
+    do {
+        if( current_id == 0 ) current_id = 1; // Skip 0 as it's invalid
+        
+        if( auto ret = sessionSet.find( current_id ); ret == sessionSet.end() ) {
+            if( auto const &[ it, ret ] = sessionSet.emplace( current_id ); !ret ) {
                 return { 0, "Cannot allocate session: cannot emplace value in set" };
             }
             if( auto const &[ it, ret ] = activeSessions.emplace( std::piecewise_construct,
-                    std::forward_as_tuple( encap, i ),
-                    std::forward_as_tuple( io, encap, i )
+                    std::forward_as_tuple( encap, current_id ),
+                    std::forward_as_tuple( io, encap, current_id )
             ); !ret ) {
+                sessionSet.erase( current_id ); // Clean up on failure
                 return { 0, "Cannot allocate session: cannot emplace new PPPOESession" };
             } else {
-                logger->logDebug() << LOGS::MAIN << "Allocated PPPOE Session: " << it->first << std::endl;
+                logger->logDebug() << LOGS::MAIN << "Allocated PPPOE Session: " << it->first 
+                                   << " (Total active sessions: " << activeSessions.size() << ")" << std::endl;
+                
+                // Warning when approaching session limit
+                if( activeSessions.size() > 60000 ) {
+                    logger->logError() << LOGS::MAIN << "High session count: " << activeSessions.size() 
+                                         << " active sessions. Approaching maximum limit." << std::endl;
+                }
             }
-            return { i, "" };
+            
+            // Update next_session_id for next allocation
+            next_session_id = current_id + 1;
+            if( next_session_id == 0 ) next_session_id = 1;
+            
+            return { current_id, "" };
         }
-    }
+        
+        current_id++;
+        if( current_id == 0 ) current_id = 1; // Wrap around, skip 0
+        
+    } while( current_id != start_id );
+    
     return { 0, "Maximum of sessions" };
 }
 
@@ -158,13 +182,17 @@ std::string PPPOERuntime::deallocateSession( uint16_t sid ) {
         return "Cannot find session with this session id";
     }
 
-    for( auto const &[ k, v ]: activeSessions ) {
-        if( v.session_id == *it ) {
-            aaa->stopSession( v.aaa_session_id );
-            logger->logDebug() << LOGS::MAIN << "Dellocated PPPOE Session: " << k << std::endl;
-            activeSessions.erase( k );
-            break;
-        }
+    // More efficient: find session by iterating only once and using iterator
+    auto session_it = std::find_if( activeSessions.begin(), activeSessions.end(),
+        [sid]( const auto& pair ) { return pair.second.session_id == sid; } );
+    
+    if( session_it != activeSessions.end() ) {
+        aaa->stopSession( session_it->second.aaa_session_id );
+        logger->logDebug() << LOGS::MAIN << "Deallocated PPPOE Session: " << session_it->first 
+                           << " (Remaining active sessions: " << (activeSessions.size() - 1) << ")" << std::endl;
+        activeSessions.erase( session_it );
+    } else {
+        logger->logError() << LOGS::MAIN << "Session " << sid << " found in sessionSet but not in activeSessions" << std::endl;
     }
 
     sessionSet.erase( it );

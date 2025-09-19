@@ -85,6 +85,7 @@ public:
 private:
     std::set<uint16_t> sessionSet;
     std::set<pppoe_conn_t> pendingSession;
+    uint16_t next_session_id = 1; // Optimize session ID allocation
     io_service &io;
     std::string conf_path;
 };

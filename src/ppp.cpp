@@ -80,7 +80,7 @@ std::string ppp::processPPP( std::vector<uint8_t> &inPkt, const encapsulation_t 
                     runtime->logger->logError() << LOGS::PPP << "Cannot get ip config for session: " << err << std::endl;
                 }
                 runtime->aaa->mapIfaceToSession( session.aaa_session_id, session.ifindex );
-                // session.timer.async_wait( std::bind( &PPPOESession::sendEchoReq, session.shared_from_this(), std::placeholders::_1 ) );
+                session.startEcho(); // Start LCP Echo mechanism to detect dead sessions
             }
         }
         break;
