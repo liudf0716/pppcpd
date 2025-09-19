@@ -16,6 +16,7 @@ struct PPPOEGlobalConf;
 struct StaticRIB;
 struct StaticRIBEntry;
 struct VRFConf;
+enum class LOGL: uint8_t;
 
 namespace YAML {
     template <>
@@ -107,6 +108,13 @@ namespace YAML {
     {
         static Node encode(const VRFConf &rhs);
         static bool decode(const Node &node, VRFConf &rhs);
+    };
+
+    template <>
+    struct convert<LOGL>
+    {
+        static Node encode(const LOGL &rhs);
+        static bool decode(const Node &node, LOGL &rhs);
     };
 }
 

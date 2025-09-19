@@ -158,9 +158,6 @@ static std::string process_padr( std::vector<uint8_t> &inPkt, std::vector<uint8_
         return "We don't expect this session";
     }
 
-    // Remove the pending session before allocating a new one
-    runtime->removePendingSession( encap.source_mac, encap.outer_vlan, encap.inner_vlan, cookie );
-
     if( auto const &[ sid, err ] = runtime->allocateSession( encap ); !err.empty() ) {
         return "Cannot process PADR: " + err;
     } else {

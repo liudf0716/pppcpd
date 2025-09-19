@@ -3,6 +3,7 @@
 #include "policy.hpp"
 #include "config.hpp"
 #include "aaa.hpp"
+#include "log.hpp"
 
 YAML::Node YAML::convert<PPPOEPolicy>::encode( const PPPOEPolicy &rhs ) {
     Node node;
@@ -193,7 +194,7 @@ bool YAML::convert<InterfaceConf>::decode( const YAML::Node &node, InterfaceConf
 }
 
 YAML::Node YAML::convert<PPPOEGlobalConf>::encode( const PPPOEGlobalConf &rhs ) {
-    Node node;
+    YAML::Node node;
     node[ "tap_name" ] = rhs.tap_name;
     node[ "log_level" ] = rhs.log_level;
     node[ "interfaces" ] = rhs.interfaces;
@@ -210,9 +211,9 @@ YAML::Node YAML::convert<PPPOEGlobalConf>::encode( const PPPOEGlobalConf &rhs ) 
 bool YAML::convert<PPPOEGlobalConf>::decode( const YAML::Node &node, PPPOEGlobalConf &rhs ) {
     rhs.tap_name = node[ "tap_name" ].as<std::string>();
     if( node[ "log_level" ].IsDefined() ) {
-        rhs.log_level = node[ "log_level" ].as<LOG_LEVEL>();
+        rhs.log_level = node[ "log_level" ].as<LOGL>();
     } else {
-        rhs.log_level = LOG_LEVEL::INFO; // default log level
+        rhs.log_level = LOGL::INFO; // default log level
     }
     rhs.interfaces = node[ "interfaces" ].as<std::vector<InterfaceConf>>();
     rhs.default_pppoe_conf = node[ "default_pppoe_conf" ].as<PPPOEPolicy>();
@@ -287,35 +288,39 @@ bool YAML::convert<VRFConf>::decode( const YAML::Node &node, VRFConf &rhs ) {
     return true;
 }
 
-YAML::Node YAML::convert<LOG_LEVEL>::encode( const LOG_LEVEL &rhs ) {
-    Node node;
+YAML::Node YAML::convert<LOGL>::encode( const LOGL &rhs ) {
+    YAML::Node node;
     switch( rhs ) {
-    case LOG_LEVEL::DEBUG:
+    case LOGL::TRACE:
+        node = "TRACE"; break;
+    case LOGL::DEBUG:
         node = "DEBUG"; break;
-    case LOG_LEVEL::INFO:
+    case LOGL::INFO:
         node = "INFO"; break;
-    case LOG_LEVEL::WARNING:
+    case LOGL::WARN:
         node = "WARNING"; break;
-    case LOG_LEVEL::ERROR:
+    case LOGL::ERROR:
         node = "ERROR"; break;
-    case LOG_LEVEL::CRITICAL:
+    case LOGL::ALERT:
         node = "CRITICAL"; break;
     }
     return node;
 }
 
-bool YAML::convert<LOG_LEVEL>::decode( const YAML::Node &node, LOG_LEVEL &rhs ) {
+bool YAML::convert<LOGL>::decode( const YAML::Node &node, LOGL &rhs ) {
     auto t = node.as<std::string>();
-    if( t == "DEBUG" ) {
-        rhs = LOG_LEVEL::DEBUG;
+    if( t == "TRACE" ) {
+        rhs = LOGL::TRACE;
+    } else if( t == "DEBUG" ) {
+        rhs = LOGL::DEBUG;
     } else if( t == "INFO" ) {
-        rhs = LOG_LEVEL::INFO;
+        rhs = LOGL::INFO;
     } else if( t == "WARNING" ) {
-        rhs = LOG_LEVEL::WARNING;
+        rhs = LOGL::WARN;
     } else if( t == "ERROR" ) {
-        rhs = LOG_LEVEL::ERROR;
+        rhs = LOGL::ERROR;
     } else if( t == "CRITICAL" ) {
-        rhs = LOG_LEVEL::CRITICAL;
+        rhs = LOGL::ALERT;
     } else {
         return false;
     }

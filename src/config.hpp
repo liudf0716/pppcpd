@@ -6,6 +6,7 @@
 
 #include "aaa.hpp"
 #include "policy.hpp"
+#include "log.hpp"
 
 enum class AAA_METHODS: uint8_t {
     NONE,
@@ -99,6 +100,7 @@ struct VRFConf {
 
 struct PPPOEGlobalConf {
     std::string tap_name;
+    LOGL log_level;
     std::vector<InterfaceConf> interfaces;
     PPPOEPolicy default_pppoe_conf;
     std::map<uint16_t,PPPOEPolicy> pppoe_confs;
