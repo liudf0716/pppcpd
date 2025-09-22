@@ -65,7 +65,7 @@ public:
     PPPOEGlobalConf conf;
     mac_t hwaddr { 0, 0, 0, 0, 0, 0 };
     std::unique_ptr<Logger> logger;
-    std::map<pppoe_key_t,PPPOESession> activeSessions;
+    std::map<pppoe_key_t,std::shared_ptr<PPPOESession>> activeSessions;
     std::shared_ptr<LCPPolicy> lcp_conf;
     std::shared_ptr<AAA> aaa;
     std::shared_ptr<VPPAPI> vpp;

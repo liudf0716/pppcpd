@@ -144,10 +144,11 @@ std::tuple<uint16_t,std::string> PPPOERuntime::allocateSession( const encapsulat
             if( auto const &[ it, ret ] = sessionSet.emplace( current_id ); !ret ) {
                 return { 0, "Cannot allocate session: cannot emplace value in set" };
             }
-            if( auto const &[ it, ret ] = activeSessions.emplace( std::piecewise_construct,
-                    std::forward_as_tuple( encap, current_id ),
-                    std::forward_as_tuple( io, encap, current_id )
-            ); !ret ) {
+            
+            // Create session as shared_ptr
+            auto session = std::make_shared<PPPOESession>( io, encap, current_id );
+            pppoe_key_t key{ encap, current_id };
+            if( auto const &[ it, ret ] = activeSessions.emplace( key, session ); !ret ) {
                 sessionSet.erase( current_id ); // Clean up on failure
                 return { 0, "Cannot allocate session: cannot emplace new PPPOESession" };
             } else {
@@ -184,10 +185,10 @@ std::string PPPOERuntime::deallocateSession( uint16_t sid ) {
 
     // More efficient: find session by iterating only once and using iterator
     auto session_it = std::find_if( activeSessions.begin(), activeSessions.end(),
-        [sid]( const auto& pair ) { return pair.second.session_id == sid; } );
+        [sid]( const auto& pair ) { return pair.second->session_id == sid; } );
     
     if( session_it != activeSessions.end() ) {
-        aaa->stopSession( session_it->second.aaa_session_id );
+        aaa->stopSession( session_it->second->aaa_session_id );
         logger->logDebug() << LOGS::MAIN << "Deallocated PPPOE Session: " << session_it->first 
                            << " (Remaining active sessions: " << (activeSessions.size() - 1) << ")" << std::endl;
         activeSessions.erase( session_it );

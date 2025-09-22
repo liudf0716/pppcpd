@@ -96,14 +96,14 @@ void CLISession::run_cmd( const std::string &cmd ) {
         GET_PPPOE_SESSION_RESP resp;
         for( auto const &[ k, v ]: runtime->activeSessions ) {
             PPPOE_SESSION_DUMP d;
-            d.aaa_session_id = v.aaa_session_id;
-            d.session_id = v.session_id;
-            d.cookie = v.cookie;
-            d.username = v.username;
-            d.address = v.address;
-            d.ifindex = v.ifindex;
-            d.vrf = v.vrf;
-            d.unnumbered = v.unnumbered;
+            d.aaa_session_id = v->aaa_session_id;
+            d.session_id = v->session_id;
+            d.cookie = v->cookie;
+            d.username = v->username;
+            d.address = v->address;
+            d.ifindex = v->ifindex;
+            d.vrf = v->vrf;
+            d.unnumbered = v->unnumbered;
             resp.sessions.push_back( std::move( d ) );
         }
         out_msg.data = serialize( resp );
@@ -112,7 +112,7 @@ void CLISession::run_cmd( const std::string &cmd ) {
     case CLI_CMD::GET_AAA_SESSIONS: {
         GET_AAA_SESSIONS_RESP resp;
         for( auto const &[ k, v ]: runtime->activeSessions ) {
-            auto [ sess_ptr, err ] = runtime->aaa->getSession( v.aaa_session_id );
+            auto [ sess_ptr, err ] = runtime->aaa->getSession( v->aaa_session_id );
             if( !err.empty() ) {
                 continue;
             }

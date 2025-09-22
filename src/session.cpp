@@ -59,7 +59,7 @@ std::string PPPOESession::deprovision_dp() {
 
 void PPPOESession::startEcho() {
     timer.expires_from_now( std::chrono::seconds( 10 ) );
-    timer.async_wait( std::bind( &PPPOESession::sendEchoReq, this, std::placeholders::_1 ) );
+    timer.async_wait( std::bind( &PPPOESession::sendEchoReq, shared_from_this(), std::placeholders::_1 ) );
 }
 
 void PPPOESession::sendEchoReq( const boost::system::error_code& ec ) {
