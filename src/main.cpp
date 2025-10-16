@@ -20,7 +20,8 @@ static void conf_init() {
     PPPOEGlobalConf global_conf;
 
     global_conf.tap_name = "tap0";
-    
+    global_conf.log_level = LOGL::INFO;  // Default log level
+
     global_conf.default_pppoe_conf.ac_name = "vBNG AC PPPoE";
     global_conf.default_pppoe_conf.insert_cookie = true;
     global_conf.default_pppoe_conf.ignore_service_name = true;
