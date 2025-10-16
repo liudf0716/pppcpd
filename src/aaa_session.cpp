@@ -76,6 +76,9 @@ AAA_Session::AAA_Session( io_service &i, uint32_t sid, const std::string &u, con
 }
 
 AAA_Session::~AAA_Session() {
+    // Cancel the timer to prevent callbacks on destroyed object
+    timer.cancel();
+    
     if( free_ip && runtime ) {
         auto const &fr_pool = runtime->conf.aaa_conf.pools.find( framed_pool );
         if( fr_pool == runtime->conf.aaa_conf.pools.end() ) {
@@ -110,6 +113,9 @@ void AAA_Session::start() {
 }
 
 void AAA_Session::stop() {
+    // Cancel the interim timer to prevent further updates
+    timer.cancel();
+    
     if( !acct ) {
         return;
     }
