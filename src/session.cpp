@@ -2,6 +2,7 @@
 #include "runtime.hpp"
 #include "vpp_types.hpp"
 #include "vpp.hpp"
+#include <random>
 
 extern std::shared_ptr<PPPOERuntime> runtime;
 
@@ -58,7 +59,15 @@ std::string PPPOESession::deprovision_dp() {
 }
 
 void PPPOESession::startEcho() {
-    timer.expires_from_now( std::chrono::seconds( 10 ) );
+    // 添加随机抖动：25秒 ± 5秒（20-30秒）
+    // 避免所有会话的 Echo 定时器同步，分散流量
+    // 大幅降低对端压力，适合 1000+ 并发场景
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(20, 30);
+    int random_interval = dis(gen);
+    
+    timer.expires_from_now( std::chrono::seconds( random_interval ) );
     timer.async_wait( std::bind( &PPPOESession::sendEchoReq, shared_from_this(), std::placeholders::_1 ) );
 }
 
@@ -68,7 +77,31 @@ void PPPOESession::sendEchoReq( const boost::system::error_code& ec ) {
         return;
     }
 
-    lcp.send_echo_req();
+    runtime->logger->logDebug() << LOGS::SESSION << "Sending LCP Echo Request for session " << session_id 
+                                 << " (echo_counter: " << static_cast<int>(lcp.get_echo_counter()) << ")" << std::endl;
+    
+    auto const& [ action, err ] = lcp.send_echo_req();
+    
+    if( !err.empty() ) {
+        runtime->logger->logError() << LOGS::SESSION << "LCP Echo failed for session " << session_id 
+                                     << ": " << err << std::endl;
+    }
+    
+    // 添加监控：记录 echo_counter 异常增长（可能预示问题）
+    if( lcp.get_echo_counter() > 2 ) {
+        runtime->logger->logInfo() << LOGS::SESSION 
+            << "High echo_counter for session " << session_id 
+            << ": " << static_cast<int>(lcp.get_echo_counter()) << std::endl;
+    }
+    
+    if( action == PPP_FSM_ACTION::LAYER_DOWN ) {
+        runtime->logger->logError() << LOGS::SESSION 
+            << "LCP Echo timeout for session " << session_id 
+            << " (echo_counter=" << static_cast<int>(lcp.get_echo_counter())
+            << ") - Terminating session" << std::endl;
+        runtime->deallocateSession( session_id );
+        return; // Don't restart the timer
+    }
 
     startEcho();
 }

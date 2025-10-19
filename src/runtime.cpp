@@ -1,6 +1,7 @@
 #include <memory>
 #include <string>
 #include <fstream>
+#include <chrono>
 #include <yaml-cpp/yaml.h>
 
 #include "runtime.hpp"
@@ -181,6 +182,24 @@ std::string PPPOERuntime::deallocateSession( uint16_t sid ) {
     auto const &it = sessionSet.find( sid );
     if( it == sessionSet.end() ) {
         return "Cannot find session with this session id";
+    }
+
+    // Batch deallocation detection: check if multiple sessions are being released in a short time
+    static auto last_dealloc_time = std::chrono::steady_clock::now();
+    static size_t dealloc_count_in_window = 0;
+    auto now = std::chrono::steady_clock::now();
+    auto time_diff = std::chrono::duration_cast<std::chrono::seconds>(now - last_dealloc_time).count();
+    
+    if (time_diff <= 10) {  // 10-second detection window
+        dealloc_count_in_window++;
+        if (dealloc_count_in_window >= 100) {  // Alert if 100+ deallocations in 10 seconds
+            logger->logError() << LOGS::MAIN << "BATCH DEALLOCATION DETECTED: " 
+                               << dealloc_count_in_window << " sessions released in " 
+                               << time_diff << " seconds!" << std::endl;
+        }
+    } else {
+        dealloc_count_in_window = 1;  // Reset counter for new time window
+        last_dealloc_time = now;
     }
 
     // More efficient: find session by iterating only once and using iterator

@@ -23,6 +23,9 @@ std::string ppp::processPPP( std::vector<uint8_t> &inPkt, const encapsulation_t 
 
     auto const &sessionIt = runtime->activeSessions.find( key );
     if( sessionIt == runtime->activeSessions.end() ) {
+        runtime->logger->logDebug() << LOGS::PPP << "Session not found in runtime. Key: " << key 
+                                     << ", SessionID: " << sessionId 
+                                     << ", Active sessions count: " << runtime->activeSessions.size() << std::endl;
         return "Cannot find this session in runtime";
     }
 

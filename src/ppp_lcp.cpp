@@ -283,8 +283,8 @@ FSM_RET LCP_FSM::send_echo_req() {
     pkt.insert( pkt.begin(), header.begin(), header.end() );
 
     echo_counter++;
-    if( echo_counter > 4 ) {
-        return { PPP_FSM_ACTION::LAYER_DOWN, "We didn't receive at least 3 echo replies" };
+    if( echo_counter > 9 ) {  // 提高阈值：从 4 改为 9，容忍时间从 50 秒提升到 100 秒
+        return { PPP_FSM_ACTION::LAYER_DOWN, "We didn't receive at least 9 echo replies" };
     }
     // Send this ECHO REQ
     runtime->ppp_outcoming.push( pkt );

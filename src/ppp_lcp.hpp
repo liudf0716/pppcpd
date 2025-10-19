@@ -22,6 +22,9 @@ struct LCP_FSM: public PPP_FSM {
 	FSM_RET send_echo_rep( std::vector<uint8_t> &inPkt );
 	FSM_RET recv_echo_rep( std::vector<uint8_t> &inPkt ) override;
 	FSM_RET send_echo_req();
+	
+	// Getter for debugging
+	uint8_t get_echo_counter() const { return echo_counter; }
 };
 
 #endif
