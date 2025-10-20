@@ -23,10 +23,12 @@ std::string ppp::processPPP( std::vector<uint8_t> &inPkt, const encapsulation_t 
 
     auto const &sessionIt = runtime->activeSessions.find( key );
     if( sessionIt == runtime->activeSessions.end() ) {
-        runtime->logger->logDebug() << LOGS::PPP << "Session not found in runtime. Key: " << key 
+        // 这是正常情况：会话已删除（PADT），但有延迟数据包到达
+        // 使用 DEBUG 级别，避免日志噪音
+        runtime->logger->logDebug() << LOGS::PPP << "Session not found in runtime (likely deleted). Key: " << key 
                                      << ", SessionID: " << sessionId 
-                                     << ", Active sessions count: " << runtime->activeSessions.size() << std::endl;
-        return "Cannot find this session in runtime";
+                                     << ", Active sessions: " << runtime->activeSessions.size() << std::endl;
+        return "";  // 返回空字符串，不触发上层错误日志
     }
 
     auto &session = sessionIt->second;

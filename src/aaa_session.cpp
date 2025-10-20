@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <functional>
+#include <boost/asio/error.hpp>
 
 #include "aaa_session.hpp"
 #include "radius_dict.hpp"
@@ -161,7 +162,21 @@ void AAA_Session::on_interim_answer( RADIUS_CODE code, std::vector<uint8_t> pkt 
 
 void AAA_Session::on_interim( const boost::system::error_code& ec ) {
     if( ec ) {
-        runtime->logger->logError() << "Error on interim timer for AAA session: " << ec.message() << std::endl;
+        // Timer 被 cancel 是正常的（会话删除时），不应该记录为错误
+        if( ec == boost::asio::error::operation_aborted ) {
+            runtime->logger->logDebug() << LOGS::AAA << "Interim timer canceled for AAA session " 
+                                         << session_id << " (normal during session cleanup)" << std::endl;
+        } else {
+            runtime->logger->logError() << LOGS::AAA << "Unexpected error on interim timer for AAA session: " 
+                                         << ec.message() << std::endl;
+        }
+        return;
+    }
+
+    // 防御性检查：NONE 认证的会话不应该发送 accounting
+    if( !acct ) {
+        runtime->logger->logError() << LOGS::AAA << "on_interim called but acct is nullptr for session " 
+                                     << session_id << std::endl;
         return;
     }
 

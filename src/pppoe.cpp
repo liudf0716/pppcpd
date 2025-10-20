@@ -207,7 +207,7 @@ std::string pppoe::processPPPOE( std::vector<uint8_t> &inPkt, const encapsulatio
     case PPPOE_CODE::PADT:
         runtime->logger->logDebug() << LOGS::PPPOED << "Processing PADT packet" << std::endl;
         runtime->deallocateSession( bswap( disc->session_id ) );
-        return "Received PADT, send nothing";
+        return "";  // 返回空字符串表示成功处理，不记录错误日志
     default:
         runtime->logger->logDebug() << LOGS::PPPOED << "Incorrect code for packet" << std::endl;
         return "Incorrect code for packet";
