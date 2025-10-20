@@ -170,15 +170,12 @@ std::tuple<uint16_t,std::string> PPPOERuntime::allocateSession( const encapsulat
             if( auto const &[ it, ret ] = activeSessions.emplace( key, session ); !ret ) {
                 sessionSet.erase( current_id ); // Clean up on failure
                 return { 0, "Cannot allocate session: cannot emplace new PPPOESession" };
-            } else {
-                logger->logDebug() << LOGS::MAIN << "Allocated PPPOE Session: " << it->first 
-                                   << " (Total active sessions: " << activeSessions.size() << ")" << std::endl;
-                
-                // Warning when approaching session limit
-                if( activeSessions.size() > 60000 ) {
-                    logger->logError() << LOGS::MAIN << "High session count: " << activeSessions.size() 
-                                         << " active sessions. Approaching maximum limit." << std::endl;
-                }
+            }
+            
+            // Warning only when approaching session limit
+            if( activeSessions.size() > 60000 ) {
+                logger->logError() << LOGS::MAIN << "High session count: " << activeSessions.size() 
+                                     << " active sessions. Approaching maximum limit." << std::endl;
             }
             
             // Update next_session_id for next allocation
@@ -193,12 +190,18 @@ std::tuple<uint16_t,std::string> PPPOERuntime::allocateSession( const encapsulat
         
     } while( current_id != start_id );
     
+    // Critical error: all session IDs exhausted
+    logger->logError() << LOGS::MAIN << "CRITICAL: Cannot allocate session - all session IDs exhausted! "
+                       << "sessionSet.size=" << sessionSet.size()
+                       << " activeSessions.size=" << activeSessions.size() << std::endl;
+    
     return { 0, "Maximum of sessions" };
 }
 
 std::string PPPOERuntime::deallocateSession( uint16_t sid ) {
     auto const &it = sessionSet.find( sid );
     if( it == sessionSet.end() ) {
+        logger->logError() << LOGS::MAIN << "Cannot find session " << sid << " in sessionSet" << std::endl;
         return "Cannot find session with this session id";
     }
 
@@ -210,8 +213,8 @@ std::string PPPOERuntime::deallocateSession( uint16_t sid ) {
     
     if (time_diff <= 10) {  // 10-second detection window
         dealloc_count_in_window++;
-        if (dealloc_count_in_window >= 100) {  // Alert if 100+ deallocations in 10 seconds
-            logger->logError() << LOGS::MAIN << "BATCH DEALLOCATION DETECTED: " 
+        if (dealloc_count_in_window >= 10) {  // Alert if 10+ deallocations in 10 seconds
+            logger->logError() << LOGS::MAIN << "⚠️  BATCH DEALLOCATION DETECTED: " 
                                << dealloc_count_in_window << " sessions released in " 
                                << time_diff << " seconds!" << std::endl;
         }
@@ -226,8 +229,6 @@ std::string PPPOERuntime::deallocateSession( uint16_t sid ) {
     
     if( session_it != activeSessions.end() ) {
         aaa->stopSession( session_it->second->aaa_session_id );
-        logger->logDebug() << LOGS::MAIN << "Deallocated PPPOE Session: " << session_it->first 
-                           << " (Remaining active sessions: " << (activeSessions.size() - 1) << ")" << std::endl;
         activeSessions.erase( session_it );
     } else {
         logger->logError() << LOGS::MAIN << "Session " << sid << " found in sessionSet but not in activeSessions" << std::endl;

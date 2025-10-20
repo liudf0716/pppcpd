@@ -146,7 +146,6 @@ void AAA_Session::stop() {
 }
 
 void AAA_Session::on_started( RADIUS_CODE code, std::vector<uint8_t> pkt ) {
-    runtime->logger->logInfo() << LOGS::SESSION << "Radius Accouting session started" << std::endl;
     auto resp = deserialize<AcctResponse>( *runtime->aaa->dict, pkt );
     to_stop_acct = true;
     timer.expires_from_now( std::chrono::seconds( 30 ) );
@@ -154,7 +153,6 @@ void AAA_Session::on_started( RADIUS_CODE code, std::vector<uint8_t> pkt ) {
 }
 
 void AAA_Session::on_interim_answer( RADIUS_CODE code, std::vector<uint8_t> pkt ) {
-    runtime->logger->logInfo() << LOGS::SESSION << "Radius Accouting update sent" << std::endl;
     auto resp = deserialize<AcctResponse>( *runtime->aaa->dict, pkt );
     timer.expires_from_now( std::chrono::seconds( 30 ) );
     timer.async_wait( std::bind( &AAA_Session::on_interim, shared_from_this(), std::placeholders::_1 ) );
@@ -162,12 +160,9 @@ void AAA_Session::on_interim_answer( RADIUS_CODE code, std::vector<uint8_t> pkt 
 
 void AAA_Session::on_interim( const boost::system::error_code& ec ) {
     if( ec ) {
-        // Timer 被 cancel 是正常的（会话删除时），不应该记录为错误
-        if( ec == boost::asio::error::operation_aborted ) {
-            runtime->logger->logDebug() << LOGS::AAA << "Interim timer canceled for AAA session " 
-                                         << session_id << " (normal during session cleanup)" << std::endl;
-        } else {
-            runtime->logger->logError() << LOGS::AAA << "Unexpected error on interim timer for AAA session: " 
+        // Timer 被 cancel 是正常的（会话删除时），只记录非预期错误
+        if( ec != boost::asio::error::operation_aborted ) {
+            runtime->logger->logError() << LOGS::AAA << "Unexpected error on interim timer: " 
                                          << ec.message() << std::endl;
         }
         return;
@@ -207,17 +202,14 @@ void AAA_Session::on_interim( const boost::system::error_code& ec ) {
 }
 
 void AAA_Session::on_stopped( RADIUS_CODE code, std::vector<uint8_t> pkt ) {
-    runtime->logger->logInfo() << LOGS::SESSION << "Radius Accouting session stopped" << std::endl;
     auto resp = deserialize<AcctResponse>( *runtime->aaa->dict, pkt );
     timer.cancel();
 }
 
 void AAA_Session::on_failed( std::string err ) {
-    runtime->logger->logError() << LOGS::SESSION << "Failed to send accouting request" << std::endl;
-    // TODO: err handling
+    runtime->logger->logError() << LOGS::SESSION << "Failed to send accounting request: " << err << std::endl;
 }
 
 void AAA_Session::map_iface( uint32_t ifi ) {
-    runtime->logger->logInfo() << LOGS::SESSION << "Mapping session to VPP interface with ifindex: " << ifi << std::endl;
     ifindex = ifi;
 }

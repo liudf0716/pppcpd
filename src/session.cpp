@@ -77,27 +77,26 @@ void PPPOESession::sendEchoReq( const boost::system::error_code& ec ) {
         return;
     }
 
-    runtime->logger->logDebug() << LOGS::SESSION << "Sending LCP Echo Request for session " << session_id 
-                                 << " (echo_counter: " << static_cast<int>(lcp.get_echo_counter()) << ")" << std::endl;
-    
+    uint8_t counter_before = lcp.get_echo_counter();
     auto const& [ action, err ] = lcp.send_echo_req();
+    uint8_t counter_after = lcp.get_echo_counter();
     
     if( !err.empty() ) {
         runtime->logger->logError() << LOGS::SESSION << "LCP Echo failed for session " << session_id 
                                      << ": " << err << std::endl;
     }
     
-    // 添加监控：记录 echo_counter 异常增长（可能预示问题）
-    if( lcp.get_echo_counter() > 2 ) {
+    // 只在接近失败阈值时警告（echo_counter > 5）
+    if( counter_after > 5 && counter_after > counter_before ) {
         runtime->logger->logInfo() << LOGS::SESSION 
             << "High echo_counter for session " << session_id 
-            << ": " << static_cast<int>(lcp.get_echo_counter()) << std::endl;
+            << ": " << static_cast<int>(counter_after) << std::endl;
     }
     
     if( action == PPP_FSM_ACTION::LAYER_DOWN ) {
         runtime->logger->logError() << LOGS::SESSION 
             << "LCP Echo timeout for session " << session_id 
-            << " (echo_counter=" << static_cast<int>(lcp.get_echo_counter())
+            << " (echo_counter=" << static_cast<int>(counter_after)
             << ") - Terminating session" << std::endl;
         runtime->deallocateSession( session_id );
         return; // Don't restart the timer
