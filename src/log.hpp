@@ -2,6 +2,8 @@
 #define LOG_HPP
 
 #include <iostream>
+#include <fstream>
+#include <memory>
 #include <iomanip>
 #include <chrono>
 #include <ctime>
@@ -35,6 +37,7 @@ std::ostream& operator<<( std::ostream &os, const LOGS &l );
 
 class Logger {
 private:
+    std::unique_ptr<std::ofstream> file_stream;  // 持有文件流（如果输出到文件）
     std::ostream &os;
     LOGL minimum;
     bool noop;
@@ -47,11 +50,33 @@ private:
     }
 
 public:
-    Logger( std::ostream &o = std::cout ):
+    // 默认构造函数：输出到 cout
+    Logger():
+        file_stream( nullptr ),
+        os( std::cout ),
+        minimum( LOGL::INFO ),
+        noop( false )
+    {}
+
+    // 构造函数：输出到指定的 ostream
+    Logger( std::ostream &o ):
+        file_stream( nullptr ),
         os( o ),
         minimum( LOGL::INFO ),
         noop( false )
     {}
+
+    // 构造函数：输出到文件
+    Logger( const std::string &filename ):
+        file_stream( std::make_unique<std::ofstream>( filename, std::ios::app ) ),
+        os( *file_stream ),
+        minimum( LOGL::INFO ),
+        noop( false )
+    {
+        if( !file_stream->is_open() ) {
+            throw std::runtime_error( "Cannot open log file: " + filename );
+        }
+    }
 
     void setLevel( const LOGL &level ) {
         minimum = level;
@@ -60,6 +85,7 @@ public:
     Logger& operator<<( std::ostream& (*fun)( std::ostream& ) ) {
         if( !noop ) {
             os << std::endl;
+            os.flush();  // 确保立即写入文件
         }
         noop = false;
         return *this;

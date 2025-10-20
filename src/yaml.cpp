@@ -197,6 +197,9 @@ YAML::Node YAML::convert<PPPOEGlobalConf>::encode( const PPPOEGlobalConf &rhs ) 
     YAML::Node node;
     node[ "tap_name" ] = rhs.tap_name;
     node[ "log_level" ] = rhs.log_level;
+    if( !rhs.log_file.empty() ) {
+        node[ "log_file" ] = rhs.log_file;
+    }
     node[ "interfaces" ] = rhs.interfaces;
     node[ "default_pppoe_conf" ] = rhs.default_pppoe_conf;
     node[ "pppoe_confs" ] = rhs.pppoe_confs;
@@ -214,6 +217,11 @@ bool YAML::convert<PPPOEGlobalConf>::decode( const YAML::Node &node, PPPOEGlobal
         rhs.log_level = node[ "log_level" ].as<LOGL>();
     } else {
         rhs.log_level = LOGL::INFO; // default log level
+    }
+    if( node[ "log_file" ].IsDefined() ) {
+        rhs.log_file = node[ "log_file" ].as<std::string>();
+    } else {
+        rhs.log_file = ""; // default to console output
     }
     rhs.interfaces = node[ "interfaces" ].as<std::vector<InterfaceConf>>();
     rhs.default_pppoe_conf = node[ "default_pppoe_conf" ].as<PPPOEPolicy>();

@@ -19,11 +19,29 @@ PPPOERuntime::PPPOERuntime( std::string cp, io_service &i ) :
     conf_path( cp ),
     io( i )
 {
+    // 先用默认 logger 加载配置
     logger = std::make_unique<Logger>();
     reloadConfig();
+    
+    // 根据配置重新初始化 logger
+    if( !conf.log_file.empty() ) {
+        try {
+            logger = std::make_unique<Logger>( conf.log_file );
+            logger->setLevel( conf.log_level );
+            logger->logInfo() << LOGS::MAIN << "Log output redirected to file: " << conf.log_file << std::endl;
+        } catch( const std::exception &e ) {
+            // 如果打开文件失败，回退到控制台输出
+            logger = std::make_unique<Logger>();
+            logger->setLevel( conf.log_level );
+            logger->logError() << LOGS::MAIN << "Failed to open log file " << conf.log_file 
+                               << ": " << e.what() << ", using console output" << std::endl;
+        }
+    } else {
+        logger->setLevel( conf.log_level );
+    }
+    
     aaa = std::make_shared<AAA>( io, conf.aaa_conf );
 
-    logger->setLevel( conf.log_level );
     logger->logInfo() << LOGS::MAIN << "Starting PPP control plane daemon..." << std::endl;
     vpp = std::make_shared<VPPAPI>( io, logger );
     for( auto const &tapid: vpp->get_tap_interfaces() ) {

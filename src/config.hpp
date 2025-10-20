@@ -101,6 +101,7 @@ struct VRFConf {
 struct PPPOEGlobalConf {
     std::string tap_name;
     LOGL log_level;
+    std::string log_file;  // 日志文件路径（可选，空字符串表示输出到控制台）
     std::vector<InterfaceConf> interfaces;
     PPPOEPolicy default_pppoe_conf;
     std::map<uint16_t,PPPOEPolicy> pppoe_confs;
