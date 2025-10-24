@@ -67,12 +67,15 @@ void AuthClient::on_rcv( boost::system::error_code ec, size_t size ) {
     }
 
     auto pkt = reinterpret_cast<RadiusPacket*>( buf.data() );
-    runtime->logger->logInfo() << LOGS::RADIUS << pkt << std::endl;
-
+    
     auto const &it = callbacks.find( pkt->id );
     if( it == callbacks.end() ) {
+        // 收到未请求的 RADIUS 包，忽略（可能是延迟的响应或其他进程的请求）
         return;
     }
+    
+    // 只在有对应请求时才打印日志
+    runtime->logger->logInfo() << LOGS::RADIUS << pkt << std::endl;
     auto &auth_authenticator = it->second.auth;
 
     std::vector<uint8_t> avp_buf { buf.begin() + sizeof( RadiusPacket ), buf.begin() + pkt->length.native() };
